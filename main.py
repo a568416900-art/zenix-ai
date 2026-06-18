@@ -4,7 +4,6 @@ import requests
 
 app = Flask(__name__)
 
-# रेंडर सर्वर से आपकी एपीआई की उठाना
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 HTML_TEMPLATE = """
@@ -28,7 +27,7 @@ HTML_TEMPLATE = """
         <h2>Zenix Voice AI ⚡</h2>
         <p>बटन दबाकर बोलें</p>
         <button class="btn-mic" id="start-btn">🎙️</button>
-        <div id="status">बटन दबाएं और बोलना शुरू करें...</div>
+        <div id="status">बटन दबाएं...</div>
         <div id="output"><strong>जवाब यहाँ दिखेगा...</strong></div>
     </div>
     <script>
@@ -38,14 +37,14 @@ HTML_TEMPLATE = """
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
-            statusDiv.innerText = "आपका ब्राउज़र वॉइस सपोर्ट नहीं करता।";
+            statusDiv.innerText = "वॉइस सपोर्ट नहीं है।";
         } else {
             const recognition = new SpeechRecognition();
             recognition.lang = 'hi-IN';
 
             startBtn.addEventListener('click', () => {
                 recognition.start();
-                statusDiv.innerText = "सुन रहा हूँ... बोलिए...";
+                statusDiv.innerText = "सुन रहा हूँ...";
             });
 
             recognition.onresult = async (event) => {
@@ -60,7 +59,9 @@ HTML_TEMPLATE = """
                         body: JSON.stringify({ message: userText })
                     });
                     const data = await response.json();
-                    outputDiv.innerHTML += `<br><br><strong>Zenix:</strong> \${data.reply}`;
+                    
+                    // यहाँ हमने एरर को पूरी तरह ठीक कर दिया है
+                    outputDiv.innerHTML += '<br><br><strong>Zenix:</strong> ' + data.reply;
                     statusDiv.innerText = "जवाब दे दिया!";
 
                     const speech = new SpeechSynthesisUtterance(data.reply);
@@ -69,10 +70,6 @@ HTML_TEMPLATE = """
                 } catch (err) {
                     statusDiv.innerText = "कनेक्शन एरर!";
                 }
-            };
-
-            recognition.onerror = () => {
-                statusDiv.innerText = "दोबारा कोशिश करें।";
             };
         }
     </script>
@@ -91,7 +88,6 @@ def chat():
     if not GEMINI_API_KEY:
         return jsonify({"reply": "कृपया रेंडर सेटिंग्स में अपनी GEMINI_API_KEY जोड़ें।"})
 
-    # 100% सही और नया जेमिनी मॉडल लिंक
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": user_message}]}]}
     
