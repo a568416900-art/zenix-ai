@@ -24,60 +24,58 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
+    <div class="chat-container">
+        <h2>Zenix Voice AI ⚡</h2>
+        <p>बटन दबाकर बोलें</p>
+        <button class="btn-mic" id="start-btn">🎙️</button>
+        <div id="status">बटन दबाएं और बोलना शुरू करें...</div>
+        <div id="output"><strong>जवाब यहाँ दिखेगा...</strong></div>
+    </div>
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const statusDiv = document.getElementById('status');
+        const outputDiv = document.getElementById('output');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-<div class="chat-container">
-    <h2>Zenix Voice AI ⚡</h2>
-    <p>बटन दबाकर बोलें</p>
-    <button class="btn-mic" id="start-btn">🎙️</button>
-    <div id="status">बटन दबाएं और बोलना शुरू करें...</div>
-    <div id="output"><strong>जवाब यहाँ दिखेगा...</strong></div>
-</div>
+        if (!SpeechRecognition) {
+            statusDiv.innerText = "आपका ब्राउज़र वॉइस सपोर्ट नहीं करता।";
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'hi-IN';
 
-<script>
-    const startBtn = document.getElementById('start-btn');
-    const statusDiv = document.getElementById('status');
-    const outputDiv = document.getElementById('output');
+            startBtn.addEventListener('click', () => {
+                recognition.start();
+                statusDiv.innerText = "सुन रहा हूँ... बोलिए...";
+            });
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-        statusDiv.innerText = "आपका ब्राउज़र वॉइस सपोर्ट नहीं करता।";
-    } else {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'hi-IN';
+            recognition.onresult = async (event) => {
+                const userText = event.results[0][0].transcript;
+                statusDiv.innerText = "सोच रहा हूँ...";
+                outputDiv.innerHTML = `<strong>आप:</strong> ${userText}`;
 
-        startBtn.addEventListener('click', () => {
-            recognition.start();
-            statusDiv.innerText = "सुन रहा हूँ... बोलिए...";
-        });
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: userText })
+                    });
+                    const data = await response.json();
+                    outputDiv.innerHTML += `<br><br><strong>Zenix:</strong> \${data.reply}`;
+                    statusDiv.innerText = "जवाब दे दिया!";
 
-        recognition.onresult = async (event) => {
-            const userText = event.results[0][0].transcript;
-            statusDiv.innerText = "सोच रहा हूँ...";
-            outputDiv.innerHTML = `<strong>आप:</strong> ${userText}`;
+                    const speech = new SpeechSynthesisUtterance(data.reply);
+                    speech.lang = 'hi-IN';
+                    window.speechSynthesis.speak(speech);
+                } catch (err) {
+                    statusDiv.innerText = "कनेक्शन एरर!";
+                }
+            };
 
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: userText })
-                });
-                const data = await response.json();
-                
-                outputDiv.innerHTML += `<br><br><strong>Zenix:</strong> ${data.reply}`;
-                statusDiv.innerText = "जवाब दे दिया!";
-
-                const speech = new SpeechSynthesisUtterance(data.reply);
-                speech.lang = 'hi-IN';
-                window.speechSynthesis.speak(speech);
-
-            } catch (err) {
-                statusDiv.innerText = "कनेक्शन एरर!";
-            }
-        };
-        recognition.onerror = () => { statusDiv.innerText = "दोबारा कोशिश करें।"; };
-    }
-</script>
+            recognition.onerror = () => {
+                statusDiv.innerText = "दोबारा कोशिश करें।";
+            };
+        }
+    </script>
 </body>
 </html>
 """
@@ -92,9 +90,9 @@ def chat():
     
     if not GEMINI_API_KEY:
         return jsonify({"reply": "कृपया रेंडर सेटिंग्स में अपनी GEMINI_API_KEY जोड़ें।"})
-    
-    # गूगल जेमिनी एआई से असली जवाब मांगना
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
+
+    # 100% सही और नया जेमिनी मॉडल लिंक
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": user_message}]}]}
     
     try:
@@ -103,7 +101,7 @@ def chat():
         ai_reply = data['candidates'][0]['content']['parts'][0]['text']
     except Exception as e:
         ai_reply = "माफ़ करना अरुण, मैं अभी कनेक्ट नहीं कर पा रहा हूँ। कृपया अपनी एपीआई की चेक करें।"
-
+        
     return jsonify({"reply": ai_reply})
 
 if __name__ == '__main__':
