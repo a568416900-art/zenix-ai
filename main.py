@@ -50,7 +50,7 @@ HTML_TEMPLATE = """
             recognition.onresult = async (event) => {
                 const userText = event.results[0][0].transcript;
                 statusDiv.innerText = "सोच रहा हूँ...";
-                outputDiv.innerHTML = `<strong>आप:</strong> ${userText}`;
+                outputDiv.innerHTML = `<strong>आप:</strong> \${userText}`;
 
                 try {
                     const response = await fetch('/chat', {
@@ -60,7 +60,6 @@ HTML_TEMPLATE = """
                     });
                     const data = await response.json();
                     
-                    // यहाँ हमने एरर को पूरी तरह ठीक कर दिया है
                     outputDiv.innerHTML += '<br><br><strong>Zenix:</strong> ' + data.reply;
                     statusDiv.innerText = "जवाब दे दिया!";
 
